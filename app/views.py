@@ -1,6 +1,6 @@
 import os
 from app import app, db, login_manager
-from flask import render_template, request, redirect, url_for, flash, session, abort
+from flask import render_template, request, redirect, url_for, flash, session, abort, send_from_directory
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.utils import secure_filename
 from app.models import UserProfile
@@ -109,3 +109,32 @@ def add_header(response):
 def page_not_found(error):
     """Custom 404 page."""
     return render_template('404.html'), 404
+
+#Exercise 6
+
+def get_uploaded_images():
+    dir_uploads = os.path.join(os.getcwd(), 'uploads')
+    photos = []
+    for subdir, dirs, files in os.walk(dir_uploads):
+        for file in files:
+            photos.append(file)
+    return photos
+
+@app.route('/uploads/<filename>')
+def get_image(filename):
+    image_dir = os.path.join(os.getcwd(), 'uploads')
+    return send_from_directory(image_dir, filename)
+
+@app.route('/files')
+@login_required
+def files():
+    imgs = get_uploaded_images()
+    return render_template('files.html', images = imgs)
+
+
+#Exercise 7
+@app.route('/logout')
+def logout():
+    logout_user()
+    flash("You were successfully logged out!", 'success')
+    return redirect(url_for('home'))
