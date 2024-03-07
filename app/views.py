@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 from app.models import UserProfile
 from app.forms import LoginForm
 from werkzeug.security import check_password_hash
+from app.forms import UploadForm
 
 
 
@@ -26,17 +27,21 @@ def about():
 
 
 @app.route('/upload', methods=['POST', 'GET'])
+@login_required
 def upload():
     # Instantiate your form class
-
+    form = UploadForm()
     # Validate file upload on submit
-    if form.validate_on_submit():
+    if request.method == 'POST' and form.validate_on_submit():
         # Get file data and save to your uploads folder
-
+        fileupload = form.fileupload.data
+        filename = secure_filename(fileupload.filename)
+        fileupload.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    
         flash('File Saved', 'success')
-        return redirect(url_for('home')) # Update this to redirect the user to a route that displays all uploaded image files
-
-    return render_template('upload.html')
+        return redirect(url_for('upload')) # Update this to redirect the user to a route that displays all uploaded image files
+    
+    return render_template('upload.html', form=form)
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -55,7 +60,7 @@ def login():
         # Then store the result of that query to a `user` variable so it can be
         # passed to the login_user() method below.
         user = db.session.execute(db.select(UserProfile).filter_by(username=username)).scalar()
-        if check_password_hash(user.password, password):
+        if user is not None and check_password_hash(user.password, password):
             # Gets user id, load into session
             login_user(user)
             flash ('Successfully logged in!', 'success')
